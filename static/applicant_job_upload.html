@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Resume</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="file"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1 id="jobTitle"></h1>
+    <h2>Upload Your Resume</h2>
+    <form id="uploadForm">
+        <label for="resumeFile">Upload Resume (PDF, DOCX, TXT, MD, TEX):</label>
+        <input type="file" id="resumeFile" name="resume" accept=".pdf,.docx,.txt,.md,.tex" required><br>
+        <button type="submit">Upload Resume</button>
+    </form>
+
+    <script>
+        const pathParts = window.location.pathname.split('/');
+        const jobID = pathParts[pathParts.length - 1];
+
+        async function loadJobDetails() {
+            const response = await fetch(`/jobs/single?jobID=${jobID}`);
+            if (response.ok) {
+                const job = await response.json();
+                document.getElementById('jobTitle').textContent = `Apply for: ${job.title}`;
+            } else {
+                document.getElementById('jobTitle').textContent = 'Job Not Found';
+                alert('Failed to load job details.');
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resumeFile = document.getElementById('resumeFile').files[0];
+
+            if (!resumeFile) {
+                alert('Please select a resume file to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('resume', resumeFile);
+
+            const response = await fetch(`/upload?jobID=${jobID}`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                alert('Resume uploaded and processed successfully!');
+                document.getElementById('resumeFile').value = ''; // Clear file input
+            } else {
+                const errorText = await response.text();
+                alert('Failed to upload resume: ' + errorText);
+            }
+        });
+
+        loadJobDetails();
+    </script>
+</body>
+</html>

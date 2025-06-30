@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .button {
+            display: inline-block;
+            padding: 8px 12px;
+            margin-top: 5px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        #jobListings { margin-top: 20px; }
+        .job-item { border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .job-item h3 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>HR Portal</h1>
+
+    <h2>Create New Job Posting</h2>
+    <form id="createJobForm">
+        <label for="jobTitle">Job Title:</label>
+        <input type="text" id="jobTitle" name="title" required><br>
+        <label for="jobDescription">Job Description:</label>
+        <textarea id="jobDescription" name="description" rows="10" required></textarea><br>
+        <button type="submit">Create Job Posting</button>
+    </form>
+
+    <h2>View Job Postings</h2>
+    <div id="jobListings">
+        Loading job postings...
+    </div>
+
+    <script>
+        document.getElementById('createJobForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('jobTitle').value;
+            const description = document.getElementById('jobDescription').value;
+
+            const response = await fetch('/jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, description }),
+            });
+
+            if (response.ok) {
+                alert('Job posting created successfully!');
+                document.getElementById('jobTitle').value = '';
+                document.getElementById('jobDescription').value = '';
+                loadJobPostings(); // Reload job postings after creation
+            } else {
+                alert('Failed to create job posting.');
+            }
+        });
+
+        async function loadJobPostings() {
+            const jobListingsDiv = document.getElementById('jobListings');
+            jobListingsDiv.innerHTML = 'Loading job postings...';
+            const response = await fetch('/jobs/all'); // Assuming a new endpoint to get all jobs
+            if (response.ok) {
+                const jobs = await response.json();
+                jobListingsDiv.innerHTML = '';
+                if (jobs.length === 0) {
+                    jobListingsDiv.innerHTML = '<p>No job postings available.</p>';
+                    return;
+                }
+                jobs.forEach(job => {
+                    const jobItem = document.createElement('div');
+                    jobItem.className = 'job-item';
+                    jobItem.innerHTML = `
+                        <h3>${job.title}</h3>
+                        <p>ID: ${job.id}</p>
+                        <p>${job.description.substring(0, 150)}...</p>
+                        <a href="/hr/job/${job.id}" class="button">View Applicants</a>`;
+                    jobListingsDiv.appendChild(jobItem);
+                });
+            } else {
+                jobListingsDiv.innerHTML = '<p>Failed to load job postings.</p>';
+            }
+        }
+
+        loadJobPostings(); // Load job postings on page load
+    </script>
+</body>
+</html>

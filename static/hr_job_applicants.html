@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicants for Job</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #f9f9f9; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1 id="jobTitle"></h1>
+    <h2>Applicants</h2>
+    <div id="applicantList">
+        Loading applicants...
+    </div>
+
+    <script>
+        const pathParts = window.location.pathname.split('/');
+        const jobID = pathParts[pathParts.length - 1];
+
+        async function loadJobDetailsAndApplicants() {
+            const jobResponse = await fetch(`/jobs/single?jobID=${jobID}`);
+            if (jobResponse.ok) {
+                const job = await jobResponse.json();
+                document.getElementById('jobTitle').textContent = `Applicants for: ${job.title}`;
+            } else {
+                document.getElementById('jobTitle').textContent = 'Job Not Found';
+            }
+
+            const applicantListDiv = document.getElementById('applicantList');
+            applicantListDiv.innerHTML = '<p>Loading applicants...</p>';
+            const response = await fetch(`/jobs/applicants?jobID=${jobID}`);
+            if (response.ok) {
+                const applicants = await response.json();
+                applicantListDiv.innerHTML = '';
+                if (applicants.length === 0) {
+                    applicantListDiv.innerHTML += '<p>No applicants for this job yet.</p>';
+                    return;
+                }
+                const ul = document.createElement('ul');
+                applicants.forEach(applicant => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <strong>${applicant.name}</strong> - Grade: ${applicant.grade.toFixed(2)}<br>
+                        Skills: ${applicant.skills.join(', ')}<br>
+                        Description: ${applicant.description}
+                    `;
+                    ul.appendChild(li);
+                });
+                applicantListDiv.appendChild(ul);
+            } else {
+                applicantListDiv.innerHTML = `<p>Failed to load applicants.</p>`;
+            }
+        }
+
+        loadJobDetailsAndApplicants();
+    </script>
+</body>
+</html>

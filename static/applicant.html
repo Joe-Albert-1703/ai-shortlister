@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicant Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        #jobList { margin-top: 20px; }
+        .job-item { border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .job-item h3 { margin-top: 0; }
+        .job-item a { text-decoration: none; color: #007bff; }
+        .job-item a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Available Job Postings</h1>
+
+    <div id="jobList">
+        Loading job postings...
+    </div>
+
+    <script>
+        async function loadJobPostingsForApplicant() {
+            const jobListDiv = document.getElementById('jobList');
+            jobListDiv.innerHTML = 'Loading job postings...';
+
+            const response = await fetch('/jobs/all');
+            if (response.ok) {
+                const jobs = await response.json();
+                jobListDiv.innerHTML = '';
+                if (jobs.length === 0) {
+                    jobListDiv.innerHTML = '<p>No job postings available. Please check back later.</p>';
+                    return;
+                }
+                jobs.forEach(job => {
+                    const jobItem = document.createElement('div');
+                    jobItem.className = 'job-item';
+                    jobItem.innerHTML = `
+                        <h3><a href="/applicant/job/${job.id}">${job.title}</a></h3>
+                        <p>ID: ${job.id}</p>
+                        <p>${job.description}</p>
+                    `;
+                    jobListDiv.appendChild(jobItem);
+                });
+            } else {
+                jobListDiv.innerHTML = '<p>Failed to load job postings.</p>';
+            }
+        }
+
+        loadJobPostingsForApplicant();
+    </script>
+</body>
+</html>
