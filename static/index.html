@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Uploader</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        input[type="file"] { margin-bottom: 10px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #response { margin-top: 20px; white-space: pre-wrap; background-color: #f4f4f4; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Your Resume</h1>
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt">
+        <button onclick="uploadResume()">Upload</button>
+        <div id="response"></div>
+    </div>
+
+    <script>
+        async function uploadResume() {
+            const fileInput = document.getElementById('resumeFile');
+            const responseDiv = document.getElementById('response');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                responseDiv.textContent = 'Please select a file.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('resume', file);
+
+            responseDiv.textContent = 'Uploading and processing...';
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.text();
+                    responseDiv.textContent = 'Gemini Response:\n' + data;
+                } else {
+                    const errorText = await response.text();
+                    responseDiv.textContent = 'Error: ' + errorText;
+                }
+            } catch (error) {
+                responseDiv.textContent = 'Network error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
