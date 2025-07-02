@@ -9,30 +9,17 @@ import (
 	"strings"
 )
 
-const convertedDir = "./converted"
-
-func ExtractTextFromFile(filePath string) (string, error) {
-	ext := strings.ToLower(filepath.Ext(filePath))
-	switch ext {
-	case ".pdf":
-		return ExtractTextFromPDF(filePath)
-	case ".docx":
-		return extractTextFromDocx(filePath)
-	case ".txt", ".md":
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return "", fmt.Errorf("failed to read file: %w", err)
-		}
-		return string(content), nil
-	case ".tex":
-		return extractPlainTextFromLatex(filePath)
-	default:
-		return "", fmt.Errorf("unsupported file format: %s", ext)
-	}
+// TextExtractor defines the interface for extracting text from files.
+type TextExtractor interface {
+	ExtractText(filePath string) (string, error)
 }
 
-func ExtractTextFromPDF(pdfPath string) (string, error) {
-	cmd := exec.Command("pdftotext", pdfPath, "-")
+// Extractor implementations for different formats
+
+type PDFExtractor struct{}
+
+func (e PDFExtractor) ExtractText(filePath string) (string, error) {
+	cmd := exec.Command("pdftotext", filePath, "-")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("error extracting text from PDF: %v", err)
@@ -40,13 +27,15 @@ func ExtractTextFromPDF(pdfPath string) (string, error) {
 	return string(output), nil
 }
 
-func extractTextFromDocx(docxPath string) (string, error) {
-	cmd := exec.Command("libreoffice", "--headless", "--convert-to", "txt", "--outdir", os.TempDir(), docxPath)
+type DocxExtractor struct{}
+
+func (e DocxExtractor) ExtractText(filePath string) (string, error) {
+	cmd := exec.Command("libreoffice", "--headless", "--convert-to", "txt", "--outdir", os.TempDir(), filePath)
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to convert docx to txt: %w", err)
 	}
 
-	txtFileName := strings.TrimSuffix(filepath.Base(docxPath), filepath.Ext(docxPath)) + ".txt"
+	txtFileName := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)) + ".txt"
 	txtFilePath := filepath.Join(os.TempDir(), txtFileName)
 
 	content, err := os.ReadFile(txtFilePath)
@@ -54,27 +43,54 @@ func extractTextFromDocx(docxPath string) (string, error) {
 		return "", fmt.Errorf("failed to read extracted text from docx: %w", err)
 	}
 
-	// Clean up the temporary .txt file
-	if err := os.Remove(txtFilePath); err != nil {
-		fmt.Printf("Error deleting temporary .txt file %s: %v\n", txtFilePath, err)
-	}
-
+	_ = os.Remove(txtFilePath)
 	return string(content), nil
 }
 
-func extractPlainTextFromLatex(texFilePath string) (string, error) {
-	data, err := os.ReadFile(texFilePath)
+type PlainTextExtractor struct{}
+
+func (e PlainTextExtractor) ExtractText(filePath string) (string, error) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+	return string(content), nil
+}
+
+type LatexExtractor struct{}
+
+func (e LatexExtractor) ExtractText(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	}
 
-	// Basic LaTeX command removal
+	// Remove basic LaTeX commands
 	re := regexp.MustCompile(`\\[a-zA-Z]+\*?(\[[^\]]*\])?(\{[^}]*\})?`)
 	plain := re.ReplaceAllString(string(data), "")
 
-	// Also remove remaining braces
+	// Remove remaining braces
 	braces := regexp.MustCompile(`[{}]`)
 	plain = braces.ReplaceAllString(plain, "")
 
 	return plain, nil
+}
+
+// Registry of file extension to extractor
+var extractors = map[string]TextExtractor{
+	".pdf":  PDFExtractor{},
+	".docx": DocxExtractor{},
+	".txt":  PlainTextExtractor{},
+	".md":   PlainTextExtractor{},
+	".tex":  LatexExtractor{},
+}
+
+// ExtractTextFromFile dispatches to the appropriate extractor based on file extension.
+func ExtractTextFromFile(filePath string) (string, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	extractor, ok := extractors[ext]
+	if !ok {
+		return "", fmt.Errorf("unsupported file format: %s", ext)
+	}
+	return extractor.ExtractText(filePath)
 }
