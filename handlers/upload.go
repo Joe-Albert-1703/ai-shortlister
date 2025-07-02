@@ -47,13 +47,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	defer out.Close()
 	io.Copy(out, file)
 
-	pdfPath, err := services.ConvertToPDF(filename)
-	if err != nil {
-		http.Error(w, "Conversion failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	text, err := services.ExtractTextFromPDF(pdfPath)
+	text, err := services.ExtractTextFromFile(filename)
 	if err != nil {
 		http.Error(w, "Text extraction failed: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -61,9 +55,6 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	if err := os.Remove(filename); err != nil {
 		fmt.Printf("Error deleting original file %s: %v\n", filename, err)
-	}
-	if err := os.Remove(pdfPath); err != nil {
-		fmt.Printf("Error deleting converted PDF %s: %v\n", pdfPath, err)
 	}
 
 	fmt.Println("Sending extracted text to Gemini...")

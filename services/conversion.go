@@ -11,35 +11,23 @@ import (
 
 const convertedDir = "./converted"
 
-func ConvertToPDF(path string) (string, error) {
-	ext := strings.ToLower(filepath.Ext(path))
-	base := filepath.Base(path)
-	name := strings.TrimSuffix(base, ext)
-	pdfPath := filepath.Join(convertedDir, name+".pdf")
-
+func ExtractTextFromFile(filePath string) (string, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
 	switch ext {
 	case ".pdf":
-		return path, nil
-	case ".docx", ".txt", ".md":
-		cmd := exec.Command("libreoffice", "--headless", "--convert-to", "pdf", "--outdir", convertedDir, path)
-		return pdfPath, cmd.Run()
-	case ".tex":
-		// Step 1: Extract text
-		plainText, err := extractPlainTextFromLatex(path)
+		return ExtractTextFromPDF(filePath)
+	case ".docx":
+		return extractTextFromDocx(filePath)
+	case ".txt", ".md":
+		content, err := os.ReadFile(filePath)
 		if err != nil {
-			return "", fmt.Errorf("failed to extract text: %w", err)
+			return "", fmt.Errorf("failed to read file: %w", err)
 		}
-
-		// Step 2: Overwrite the original .tex file with plain text
-		if err := os.WriteFile(path, []byte(plainText), 0644); err != nil {
-			return "", fmt.Errorf("failed to overwrite .tex file with plain text: %w", err)
-		}
-
-		// Step 3: Convert .txt to .pdf using LibreOffice
-		cmd := exec.Command("libreoffice", "--headless", "--convert-to", "pdf", "--outdir", convertedDir, path)
-		return pdfPath, cmd.Run()
+		return string(content), nil
+	case ".tex":
+		return extractPlainTextFromLatex(filePath)
 	default:
-		return "", fmt.Errorf("unsupported format: %s", ext)
+		return "", fmt.Errorf("unsupported file format: %s", ext)
 	}
 }
 
@@ -47,9 +35,31 @@ func ExtractTextFromPDF(pdfPath string) (string, error) {
 	cmd := exec.Command("pdftotext", pdfPath, "-")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("error extracting text: %v", err)
+		return "", fmt.Errorf("error extracting text from PDF: %v", err)
 	}
 	return string(output), nil
+}
+
+func extractTextFromDocx(docxPath string) (string, error) {
+	cmd := exec.Command("libreoffice", "--headless", "--convert-to", "txt", "--outdir", os.TempDir(), docxPath)
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to convert docx to txt: %w", err)
+	}
+
+	txtFileName := strings.TrimSuffix(filepath.Base(docxPath), filepath.Ext(docxPath)) + ".txt"
+	txtFilePath := filepath.Join(os.TempDir(), txtFileName)
+
+	content, err := os.ReadFile(txtFilePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read extracted text from docx: %w", err)
+	}
+
+	// Clean up the temporary .txt file
+	if err := os.Remove(txtFilePath); err != nil {
+		fmt.Printf("Error deleting temporary .txt file %s: %v\n", txtFilePath, err)
+	}
+
+	return string(content), nil
 }
 
 func extractPlainTextFromLatex(texFilePath string) (string, error) {
