@@ -5,32 +5,113 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HR Portal</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1, h2 { color: #333; }
-        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #45a049; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 40px auto;
+            max-width: 900px;
+            background-color: #f4f6f9;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+    
+        h1 {
+            font-size: 2.2rem;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+    
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 30px;
+            color: #34495e;
+            margin-bottom: 15px;
+        }
+    
+        form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+    
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+    
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+    
+        button {
+            background-color: #27ae60;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+    
+        button:hover {
+            background-color: #1e8449;
+        }
+    
         .button {
             display: inline-block;
-            padding: 8px 12px;
-            margin-top: 5px;
-            background-color: #007bff;
+            padding: 8px 14px;
+            margin-top: 10px;
+            background-color: #2980b9;
             color: white;
-            border-radius: 4px;
+            border-radius: 6px;
             text-decoration: none;
+            transition: background-color 0.3s ease;
         }
+    
         .button:hover {
-            background-color: #0056b3;
+            background-color: #1f618d;
         }
-        #jobListings { margin-top: 20px; }
-        .job-item { border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        .job-item h3 { margin-top: 0; }
-    </style>
+    
+        #jobListings {
+            margin-top: 20px;
+        }
+    
+        .job-item {
+            background-color: #ffffff;
+            border: 1px solid #e1e4e8;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+        }
+    
+        .job-item h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #2d3436;
+        }
+    
+        p {
+            margin: 6px 0;
+            color: #555;
+        }
+    </style>    
 </head>
 <body>
     <h1>HR Portal</h1>
+
+    <div id="notification" style="display: none;"></div>
 
     <h2>Create New Job Posting</h2>
     <form id="createJobForm">
@@ -47,6 +128,27 @@
     </div>
 
     <script>
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            notification.style.backgroundColor = isError ? '#ffdddd' : '#ddffdd';
+            notification.style.color = isError ? '#a30000' : '#225522';
+            notification.style.border = '1px solid ' + (isError ? '#ff8888' : '#88cc88');
+            notification.style.padding = '12px';
+            notification.style.margin = '20px 0';
+            notification.style.borderRadius = '6px';
+            notification.style.transition = 'opacity 0.5s ease';
+            notification.style.opacity = '1';
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 500);
+            }, 3000);
+        }
+
         document.getElementById('createJobForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const title = document.getElementById('jobTitle').value;
@@ -61,19 +163,19 @@
             });
 
             if (response.ok) {
-                alert('Job posting created successfully!');
+                showNotification('Job posting created successfully!');
                 document.getElementById('jobTitle').value = '';
                 document.getElementById('jobDescription').value = '';
-                loadJobPostings(); // Reload job postings after creation
+                loadJobPostings();
             } else {
-                alert('Failed to create job posting.');
+                showNotification('Failed to create job posting.', true);
             }
         });
 
         async function loadJobPostings() {
             const jobListingsDiv = document.getElementById('jobListings');
             jobListingsDiv.innerHTML = 'Loading job postings...';
-            const response = await fetch('/jobs/all'); // Assuming a new endpoint to get all jobs
+            const response = await fetch('/jobs/all');
             if (response.ok) {
                 const jobs = await response.json();
                 jobListingsDiv.innerHTML = '';
@@ -96,7 +198,7 @@
             }
         }
 
-        loadJobPostings(); // Load job postings on page load
+        loadJobPostings();
     </script>
 </body>
 </html>

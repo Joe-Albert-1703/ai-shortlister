@@ -47,9 +47,13 @@ func createTables() {
 		id SERIAL PRIMARY KEY,
 		job_id TEXT NOT NULL REFERENCES job_postings(id),
 		name TEXT NOT NULL,
+		email TEXT,
+		phone TEXT,
 		grade NUMERIC(5,2) NOT NULL,
 		skills TEXT[],
-		description TEXT NOT NULL
+		description TEXT NOT NULL,
+		UNIQUE (job_id, email),
+    	UNIQUE (job_id, phone)
 	);`
 
 	_, err := DB.Exec(createJobPostingsTableSQL)

@@ -8,19 +8,21 @@ import (
 )
 
 type JobPosting struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	ID          string      `json:"id"`
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
 	Applicants  []Applicant `json:"applicants"`
 }
 
 type Applicant struct {
-	ID          int     `json:"id"`
-	JobID       string  `json:"job_id"`
-	Name        string  `json:"name"`
-	Grade       float64 `json:"grade"`
+	ID          int      `json:"id"`
+	JobID       string   `json:"job_id"`
+	Name        string   `json:"name"`
+	Email       string   `json:"email"`
+	Phone       string   `json:"phone"`
+	Grade       float64  `json:"grade"`
 	Skills      []string `json:"skills"`
-	Description string  `json:"description"`
+	Description string   `json:"description"`
 }
 
 func AddJobPosting(job JobPosting) error {
@@ -45,7 +47,7 @@ func GetJobPosting(id string) (JobPosting, bool) {
 		return JobPosting{}, false
 	}
 
-	rows, err := database.DB.Query("SELECT id, job_id, name, grade, skills, description FROM applicants WHERE job_id = $1", id)
+	rows, err := database.DB.Query("SELECT id, job_id, name, grade, skills, description , email, phone FROM applicants WHERE job_id = $1", id)
 	if err != nil {
 		log.Printf("Error getting applicants for job %s from DB: %v", id, err)
 		return job, false // Return job even if applicants can't be fetched
@@ -55,7 +57,7 @@ func GetJobPosting(id string) (JobPosting, bool) {
 	for rows.Next() {
 		var applicant Applicant
 		var skillsStr string // To scan TEXT[] as string
-		err := rows.Scan(&applicant.ID, &applicant.JobID, &applicant.Name, &applicant.Grade, &skillsStr, &applicant.Description)
+		err := rows.Scan(&applicant.ID, &applicant.JobID, &applicant.Name, &applicant.Grade, &skillsStr, &applicant.Description, &applicant.Email, &applicant.Phone)
 		if err != nil {
 			log.Printf("Error scanning applicant row: %v", err)
 			continue
@@ -67,9 +69,19 @@ func GetJobPosting(id string) (JobPosting, bool) {
 	return job, true
 }
 
+func ApplicantExists(jobID, email, phone string) (bool, error) {
+	var count int
+	err := database.DB.QueryRow("SELECT COUNT(*) FROM applicants WHERE job_id = $1 AND email = $2 AND phone = $3", jobID, email, phone).Scan(&count)
+	if err != nil {
+		log.Printf("Error checking if applicant exists: %v", err)
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func AddApplicantToJob(applicant Applicant) error {
-	_, err := database.DB.Exec("INSERT INTO applicants (job_id, name, grade, skills, description) VALUES ($1, $2, $3, $4, $5)",
-		applicant.JobID, applicant.Name, applicant.Grade, "{" + joinStrings(applicant.Skills) + "}", applicant.Description)
+	_, err := database.DB.Exec("INSERT INTO applicants (job_id, name, email, phone, grade, skills, description) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		applicant.JobID, applicant.Name, applicant.Email, applicant.Phone, applicant.Grade, "{"+joinStrings(applicant.Skills)+"}", applicant.Description)
 	if err != nil {
 		log.Printf("Error adding applicant to DB: %v", err)
 		return err

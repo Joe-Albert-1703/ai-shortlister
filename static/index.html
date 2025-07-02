@@ -5,26 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume Shortlister</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
-        h1 { color: #333; }
-        .container { margin-top: 50px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background-color: #f4f6f9;
+            text-align: center;
+            color: #2c3e50;
+        }
+    
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 40px;
+            color: #2c3e50;
+        }
+    
+        .container {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+    
         .button-link {
             display: inline-block;
-            padding: 15px 30px;
-            margin: 10px;
-            font-size: 1.2em;
-            color: white;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
             background-color: #007bff;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             text-decoration: none;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
+    
         .button-link:hover {
             background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+    
+        @media (min-width: 600px) {
+            .container {
+                flex-direction: row;
+                justify-content: center;
+            }
         }
     </style>
+    
 </head>
 <body>
     <h1>Welcome to the Resume Shortlister</h1>

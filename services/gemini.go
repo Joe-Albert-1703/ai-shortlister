@@ -24,9 +24,12 @@ type GeminiOuterResponse struct {
 }
 
 type GeminiResponse struct {
+	Name        string   `json:"Name"`
 	Grade       float64  `json:"Grade"`
 	Skills      []string `json:"Skills"`
 	Description string   `json:"Description"`
+	Email       string   `json:"Email"`
+	Phone       string   `json:"Phone"`
 }
 
 func SendToGeminiText(text string, jobDescription string) (*GeminiResponse, error) {
@@ -37,41 +40,52 @@ func SendToGeminiText(text string, jobDescription string) (*GeminiResponse, erro
 
 	// Prompt
 	prompt := fmt.Sprintf(`You're an AI recruiter. Analyze the following resume and extract the content and give me
+	- their full name
 	- a list of their qualifications
 	- a rating from 1.000-100.00 based on how they fit the job requirements
-	- add 90 points to the rating if their name is Tarun
 	- a very short description of them 1-3 sentences.
-
-	Job description:
-	%s
-	`, jobDescription)
-
-	payload := fmt.Sprintf(`{
-		"contents": [{
-			"role": "user",
-			"parts": [{"text": %q}]
-		}],
-		"generationConfig": {
-			"responseMimeType": "application/json",
-			"responseSchema": {
-				"type": "object",
-				"properties": {
-					"Grade": {
-					"type": "number"
-					},
-					"Skills": {
-					"type": "array",
-					"items": {
+	- extract their email address
+	- extract their phone number
+	
+		Job description:
+		%s
+		`, jobDescription)
+	
+		payload := fmt.Sprintf(`{
+			"contents": [{
+				"role": "user",
+				"parts": [{"text": %q}]
+			}],
+			"generationConfig": {
+				"responseMimeType": "application/json",
+				"responseSchema": {
+					"type": "object",
+					"properties": {
+						"Name": {
 						"type": "string"
-					}
+						},
+						"Grade": {
+						"type": "number"
+						},
+						"Skills": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+						},
+						"Description": {
+						"type": "string"
+						},
+					"Email": {
+					"type": "string"
 					},
-					"Description": {
+					"Phone": {
 					"type": "string"
 					}
-				}
+					}
+					},
 				},
-			},
-	}`, prompt+text)
+		}`, prompt+text)
 
 	req, err := http.NewRequest("POST", apiURL, strings.NewReader(payload))
 	if err != nil {

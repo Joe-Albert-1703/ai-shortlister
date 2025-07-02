@@ -5,15 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Applicants for Job</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1, h2 { color: #333; }
-        ul { list-style-type: none; padding: 0; }
-        li { background-color: #f9f9f9; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 40px auto;
+            max-width: 800px;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+    
+        h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    
+        h2 {
+            font-size: 1.5rem;
+            color: #34495e;
+            margin-bottom: 15px;
+        }
+    
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+    
+        li {
+            background: #ffffff;
+            margin-bottom: 15px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+    
+        li:hover {
+            transform: scale(1.01);
+        }
+    
+        strong {
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+    
+        p {
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        
     </style>
+    
 </head>
 <body>
-    <h1 id="jobTitle"></h1>
-    <h2>Applicants</h2>
+    <h1 id="jobTitle" style="background-color: #eaf4ff; padding: 12px 16px; border-radius: 6px;"></h1>
+    <h2 style="background-color: #f0f3f5; padding: 10px 14px; border-radius: 6px;">Applicants</h2>
     <div id="applicantList">
         Loading applicants...
     </div>
@@ -44,10 +92,14 @@
                 const ul = document.createElement('ul');
                 applicants.forEach(applicant => {
                     const li = document.createElement('li');
+                    li.classList.add('collapsible-item');
                     li.innerHTML = `
-                        <strong>${applicant.name}</strong> - Grade: ${applicant.grade.toFixed(2)}<br>
-                        Skills: ${applicant.skills.join(', ')}<br>
-                        Description: ${applicant.description}
+                    <strong>${applicant.name}</strong>
+                    <strong>Grade:</strong><span> ${applicant.grade.toFixed(2)} </span><br> 
+                        <strong>Email:</strong><span> ${applicant.email || 'N/A'} </span><br>
+                        <strong>Phone:</strong><span> ${applicant.phone || 'N/A'} </span><br>
+                        <strong>Skills:</strong> <span>${applicant.skills.join(', ')} </span><br>
+                        <strong>Description:</strong><span> ${applicant.description} </span>
                     `;
                     ul.appendChild(li);
                 });

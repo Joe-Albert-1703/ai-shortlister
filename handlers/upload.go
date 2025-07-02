@@ -9,7 +9,6 @@ import (
 
 	"ai-shortlister/models"
 	"ai-shortlister/services"
-	"strings"
 )
 
 const uploadDir = "./uploads"
@@ -60,6 +59,13 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := os.Remove(filename); err != nil {
+		fmt.Printf("Error deleting original file %s: %v\n", filename, err)
+	}
+	if err := os.Remove(pdfPath); err != nil {
+		fmt.Printf("Error deleting converted PDF %s: %v\n", pdfPath, err)
+	}
+
 	fmt.Println("Sending extracted text to Gemini...")
 	geminiResponse, err := services.SendToGeminiText(text, job.Description)
 	if err != nil {
@@ -70,25 +76,30 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Recieved grade from gemini")
 	applicant := models.Applicant{
+		Name:        geminiResponse.Name,
 		Grade:       geminiResponse.Grade,
 		Description: geminiResponse.Description,
 		Skills:      geminiResponse.Skills,
+		Email:       geminiResponse.Email,
+		Phone:       geminiResponse.Phone,
 	}
 
-	applicant.Name = strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename)) // Assuming filename is applicant name
 	applicant.JobID = jobID
+	// Check if applicant already exists for this job
+	exists, err := models.ApplicantExists(applicant.JobID, applicant.Email, applicant.Phone)
+	if err != nil {
+		http.Error(w, "Failed to check existing applicant: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		http.Error(w, "A resume has already been submitted in your name for this job.", http.StatusConflict)
+		return
+	}
+
 	err = models.AddApplicantToJob(applicant)
 	if err != nil {
 		http.Error(w, "Failed to save applicant: "+err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	// Clean up: Delete the original uploaded file and the converted PDF
-	if err := os.Remove(filename); err != nil {
-		fmt.Printf("Error deleting original file %s: %v\n", filename, err)
-	}
-	if err := os.Remove(pdfPath); err != nil {
-		fmt.Printf("Error deleting converted PDF %s: %v\n", pdfPath, err)
 	}
 
 	fmt.Fprintln(w, "Upload and processing complete. Applicant added to job posting.")

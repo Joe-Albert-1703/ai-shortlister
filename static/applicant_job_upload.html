@@ -5,14 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Resume</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1, h2 { color: #333; }
-        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="file"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 40px auto;
+            max-width: 700px;
+            background-color: #f4f6f9;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+    
+        h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    
+        h2 {
+            font-size: 1.4rem;
+            color: #34495e;
+            margin-bottom: 15px;
+        }
+    
+        form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+    
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+    
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            background-color: #fff;
+            box-sizing: border-box;
+        }
+    
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+    
+        button:hover {
+            background-color: #0056b3;
+        }
+    
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            animation: spin 0.8s linear infinite;
+            display: none;
+            margin-left: 10px;
+        }
+    
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
+    
 </head>
 <body>
     <h1 id="jobTitle"></h1>
@@ -20,12 +99,37 @@
     <form id="uploadForm">
         <label for="resumeFile">Upload Resume (PDF, DOCX, TXT, MD, TEX):</label>
         <input type="file" id="resumeFile" name="resume" accept=".pdf,.docx,.txt,.md,.tex" required><br>
-        <button type="submit">Upload Resume</button>
+        <button type="submit" id="uploadButton">Upload Resume <div class="spinner" id="uploadSpinner"></div></button>
     </form>
+
+    <div id="notification" style="display:none;"></div>
 
     <script>
         const pathParts = window.location.pathname.split('/');
         const jobID = pathParts[pathParts.length - 1];
+        const uploadButton = document.getElementById('uploadButton');
+        const uploadSpinner = document.getElementById('uploadSpinner');
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            notification.style.backgroundColor = isError ? '#ffdddd' : '#ddffdd';
+            notification.style.color = isError ? '#a30000' : '#225522';
+            notification.style.border = '1px solid ' + (isError ? '#ff8888' : '#88cc88');
+            notification.style.padding = '12px';
+            notification.style.marginBottom = '20px';
+            notification.style.borderRadius = '6px';
+            notification.style.transition = 'opacity 0.5s ease';
+            notification.style.opacity = '1';
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 500);
+            }, 3000);
+        }
 
         async function loadJobDetails() {
             const response = await fetch(`/jobs/single?jobID=${jobID}`);
@@ -34,7 +138,7 @@
                 document.getElementById('jobTitle').textContent = `Apply for: ${job.title}`;
             } else {
                 document.getElementById('jobTitle').textContent = 'Job Not Found';
-                alert('Failed to load job details.');
+                showNotification('Failed to load job details.', true);
             }
         }
 
@@ -43,28 +147,40 @@
             const resumeFile = document.getElementById('resumeFile').files[0];
 
             if (!resumeFile) {
-                alert('Please select a resume file to upload.');
+                showNotification('Please select a resume file to upload.', true);
                 return;
             }
+
+            uploadButton.disabled = true;
+            uploadSpinner.style.display = 'inline-block';
 
             const formData = new FormData();
             formData.append('resume', resumeFile);
 
-            const response = await fetch(`/upload?jobID=${jobID}`, {
-                method: 'POST',
-                body: formData,
-            });
+            try {
+                const response = await fetch(`/upload?jobID=${jobID}`, {
+                    method: 'POST',
+                    body: formData,
+                });
 
-            if (response.ok) {
-                alert('Resume uploaded and processed successfully!');
-                document.getElementById('resumeFile').value = ''; // Clear file input
-            } else {
-                const errorText = await response.text();
-                alert('Failed to upload resume: ' + errorText);
+                if (response.ok) {
+                    showNotification('Resume uploaded and processed successfully!');
+                    document.getElementById('resumeFile').value = '';
+                } else {
+                    const errorText = await response.text();
+                    showNotification('Failed to upload resume: ' + errorText, true);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showNotification('An error occurred during upload.', true);
+            } finally {
+                uploadButton.disabled = false;
+                uploadSpinner.style.display = 'none';
             }
         });
 
         loadJobDetails();
     </script>
 </body>
+
 </html>
